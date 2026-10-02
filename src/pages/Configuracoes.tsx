@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Cabecalho, mensagemErro } from '../components/ui'
 import { mascaraCpfCnpj, mascaraTelefone } from '../lib/format'
 import { CLAUSULAS_PADRAO, MENSAGEM_COBRANCA_PADRAO } from '../lib/seed'
+import { salvarArquivo } from '../lib/arquivo'
 import { useStore } from '../lib/store'
 import type { Config } from '../lib/types'
 
@@ -21,13 +22,13 @@ export default function Configuracoes({ aoSair }: { aoSair?: () => void }) {
     }
   }
 
-  const exportar = () => {
+  const exportar = async () => {
     const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `backup-aluguel-andaime-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    try {
+      await salvarArquivo(`backup-aluguel-andaime-${new Date().toISOString().slice(0, 10)}.json`, blob)
+    } catch (e) {
+      setMsg({ tipo: 'erro', texto: mensagemErro(e) })
+    }
   }
 
   return (
@@ -72,10 +73,10 @@ export default function Configuracoes({ aoSair }: { aoSair?: () => void }) {
       <div className="card">
         <h2>Dados</h2>
         <p className="suave" style={{ marginTop: 0 }}>
-          {modo === 'supabase' ? 'Seus dados estão salvos na nuvem (Supabase).' : 'Modo demonstração: os dados estão só neste navegador.'}
+          {modo === 'local' ? 'Modo demonstração: os dados estão só neste navegador.' : 'Seus dados estão salvos na nuvem e aparecem no computador e no celular.'}
         </p>
         <div className="botoes">
-          <button className="btn" onClick={exportar}>Baixar cópia de segurança</button>
+          <button className="btn" onClick={() => void exportar()}>Baixar cópia de segurança</button>
           {aoSair && <button className="btn perigo" onClick={aoSair}>Sair da conta</button>}
         </div>
       </div>

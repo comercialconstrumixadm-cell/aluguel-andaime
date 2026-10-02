@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { backend, type Dados } from './db'
+import { obterBackend, type Backend, type Dados, type Modo } from './db'
+import { gerarId } from './format'
 import { configPadrao, produtosIniciais } from './seed'
 import type { Config, Devolucao, NomeTabela, Tabelas } from './types'
 
@@ -8,7 +9,7 @@ interface Store {
   config: Config
   carregando: boolean
   erro: string
-  modo: 'supabase' | 'local'
+  modo: Modo | null
   inserir<K extends NomeTabela>(tabela: K, linha: Tabelas[K]): Promise<void>
   atualizar<K extends NomeTabela>(tabela: K, id: string, campos: Partial<Tabelas[K]>): Promise<void>
   excluir(tabela: NomeTabela, id: string): Promise<void>
@@ -25,11 +26,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [dados, setDados] = useState<Dados>(VAZIO)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  const [backend, setBackend] = useState<Backend | null>(null)
 
   const recarregar = useCallback(async () => {
     setCarregando(true)
     setErro('')
     try {
+      const backend = await obterBackend()
+      setBackend(backend)
       const d = await backend.carregar()
       // Primeiro acesso: cria as configurações e os produtos iniciais.
       if (!d.configuracoes.length) {
@@ -54,12 +58,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [recarregar])
 
   const inserir = useCallback(async <K extends NomeTabela>(tabela: K, linha: Tabelas[K]) => {
-    await backend.inserir(tabela, linha)
+    await (await obterBackend()).inserir(tabela, linha)
     setDados((d) => ({ ...d, [tabela]: [...d[tabela], linha] }))
   }, [])
 
   const atualizar = useCallback(async <K extends NomeTabela>(tabela: K, id: string, campos: Partial<Tabelas[K]>) => {
-    await backend.atualizar(tabela, id, campos)
+    await (await obterBackend()).atualizar(tabela, id, campos)
     setDados((d) => ({
       ...d,
       [tabela]: (d[tabela] as Tabelas[K][]).map((l) => (l.id === id ? { ...l, ...campos } : l)),
@@ -67,7 +71,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const excluir = useCallback(async (tabela: NomeTabela, id: string) => {
-    await backend.excluir(tabela, id)
+    await (await obterBackend()).excluir(tabela, id)
     setDados((d) => ({ ...d, [tabela]: (d[tabela] as { id: string }[]).filter((l) => l.id !== id) }))
   }, [])
 
@@ -109,7 +113,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       config: dados.configuracoes[0] ?? configPadrao(),
       carregando,
       erro,
-      modo: backend.modo,
+      modo: backend?.modo ?? null,
       inserir,
       atualizar,
       excluir,
@@ -117,7 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       excluirDevolucao,
       recarregar,
     }),
-    [dados, carregando, erro, inserir, atualizar, excluir, registrarDevolucao, excluirDevolucao, recarregar],
+    [dados, carregando, erro, backend, inserir, atualizar, excluir, registrarDevolucao, excluirDevolucao, recarregar],
   )
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>
@@ -130,7 +134,7 @@ export function useStore(): Store {
 }
 
 export function novoId(): string {
-  return crypto.randomUUID()
+  return gerarId()
 }
 
 export function agoraISO(): string {

@@ -4,8 +4,10 @@ import type { NomeTabela, Tabelas } from './types'
 
 export type Dados = { [K in NomeTabela]: Tabelas[K][] }
 
+export type Modo = 'supabase' | 'local' | 'claude'
+
 export interface Backend {
-  modo: 'supabase' | 'local'
+  modo: Modo
   carregar(): Promise<Dados>
   inserir<K extends NomeTabela>(tabela: K, linha: Tabelas[K]): Promise<void>
   atualizar<K extends NomeTabela>(tabela: K, id: string, campos: Partial<Tabelas[K]>): Promise<void>
@@ -111,4 +113,63 @@ function localBackend(): Backend {
   }
 }
 
-export const backend: Backend = supabase ? supabaseBackend(supabase) : localBackend()
+// ---- Nuvem do Claude (app publicado como Artifact no claude.ai) ----
+
+interface DocSnap { data(): Record<string, unknown> | undefined }
+interface DocRef {
+  set(d: Record<string, unknown>): Promise<void>
+  update(d: Record<string, unknown>): Promise<void>
+  delete(): Promise<void>
+}
+interface ClaudeDb {
+  doc(path: string): DocRef
+  collection(path: string): { limit(n: number): { get(): Promise<{ docs: DocSnap[] }> } }
+}
+interface JanelaClaude { claude?: { use(nome: string): Promise<unknown> } }
+
+/** Verdadeiro quando o app está aberto dentro do claude.ai. */
+export const dentroDoClaude = typeof window !== 'undefined' && !!(window as unknown as JanelaClaude).claude?.use
+
+export function usarCapacidade<T>(nome: string): Promise<T | null> {
+  const c = (window as unknown as JanelaClaude).claude
+  return c ? (c.use(nome) as Promise<T | null>) : Promise.resolve(null)
+}
+
+function claudeBackend(db: ClaudeDb): Backend {
+  const ref = (t: NomeTabela, id: string) => db.doc(`${t}/${id}`)
+  return {
+    modo: 'claude',
+    async carregar() {
+      const dados = vazio()
+      const res = await Promise.all(TABELAS.map((t) => db.collection(t).limit(1000).get()))
+      TABELAS.forEach((t, i) => {
+        ;(dados as Record<string, unknown[]>)[t] = res[i].docs.map((d) => d.data()).filter(Boolean)
+      })
+      return dados
+    },
+    async inserir(tabela, linha) {
+      await ref(tabela, linha.id).set(structuredClone(linha) as unknown as Record<string, unknown>)
+    },
+    async atualizar(tabela, id, campos) {
+      await ref(tabela, id).update(structuredClone(campos) as Record<string, unknown>)
+    },
+    async excluir(tabela, id) {
+      await ref(tabela, id).delete()
+    },
+  }
+}
+
+let backendPromessa: Promise<Backend> | null = null
+
+/** Escolhe onde os dados ficam: nuvem do Claude, Supabase ou só este navegador. */
+export function obterBackend(): Promise<Backend> {
+  backendPromessa ??= (async () => {
+    if (dentroDoClaude) {
+      const db = await usarCapacidade<ClaudeDb>('db')
+      if (!db) throw new Error('Não consegui acessar os dados. Abra o app pelo claude.ai, entrando com a sua conta.')
+      return claudeBackend(db)
+    }
+    return supabase ? supabaseBackend(supabase) : localBackend()
+  })()
+  return backendPromessa
+}

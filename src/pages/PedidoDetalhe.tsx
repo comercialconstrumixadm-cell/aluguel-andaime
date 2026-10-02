@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { avisar, confirmar } from '../components/dialogos'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CampoNumero, Cabecalho, Modal, StatusTag, mensagemErro } from '../components/ui'
 import { FORMAS, arred, dataBR, diffDias, hoje, moeda, somarDias } from '../lib/format'
 import { usePedidos, whatsCobranca, type PedidoComResumo } from '../lib/hooks'
+import { dentroDoClaude } from '../lib/db'
 import type { DadosDoc } from '../lib/pdf'
 import { agoraISO, novoId, useStore } from '../lib/store'
 import type { Devolucao, DevolucaoItem, FormaPagamento, Pagamento, TipoPagamento } from '../lib/types'
@@ -16,7 +18,7 @@ const NOMES_TIPO: Record<TipoPagamento, string> = {
 // O gerador de PDF é carregado só quando necessário, para o app abrir mais rápido.
 const carregarPdf = () => import('../lib/pdf')
 
-const podeCompartilhar = typeof navigator !== 'undefined' && typeof navigator.canShare === 'function'
+const podeCompartilhar = !dentroDoClaude && typeof navigator !== 'undefined' && typeof navigator.canShare === 'function'
 
 export default function PedidoDetalhe() {
   const { id } = useParams()
@@ -43,30 +45,34 @@ export default function PedidoDetalhe() {
         : tipo === 'recibo'
           ? m.gerarRecibo(docBase, pagamento!)
           : m.gerarRomaneio(docBase, tipo === 'romaneio' ? 'saida' : 'devolucao')
-    await m.entregarPdf(doc, tipo, pedido, cliente, compartilhar)
+    try {
+      await m.entregarPdf(doc, tipo, pedido, cliente, compartilhar)
+    } catch (e) {
+      await avisar(mensagemErro(e))
+    }
   }
 
   const tentar = async (acao: () => Promise<void>) => {
     try {
       await acao()
     } catch (e) {
-      alert(mensagemErro(e))
+      await avisar(mensagemErro(e))
     }
   }
 
   const alternarCancelado = () =>
     tentar(async () => {
-      if (!pedido.cancelado && !confirm('Cancelar este pedido? As peças voltam para o estoque disponível.')) return
+      if (!pedido.cancelado && !await confirmar('Cancelar este pedido? As peças voltam para o estoque disponível.')) return
       await atualizar('pedidos', pedido.id, { cancelado: !pedido.cancelado })
     })
 
   const excluirPedido = () =>
     tentar(async () => {
       if (devolucoes.length || pagamentos.length) {
-        alert('Este pedido tem pagamentos ou devoluções. Exclua-os antes ou use "Cancelar pedido".')
+        await avisar('Este pedido tem pagamentos ou devoluções. Exclua-os antes ou use "Cancelar pedido".')
         return
       }
-      if (!confirm(`Excluir o pedido #${pedido.numero} de vez?`)) return
+      if (!await confirmar(`Excluir o pedido #${pedido.numero} de vez?`)) return
       await excluir('pedidos', pedido.id)
       navegar('/pedidos', { replace: true })
     })
@@ -199,7 +205,7 @@ export default function PedidoDetalhe() {
                   <button className="btn pequeno" onClick={() => void pdf('recibo', true, p)}>📤</button>
                 )}
                 <button className="btn pequeno perigo" onClick={() => tentar(async () => {
-                  if (confirm(`Excluir ${NOMES_TIPO[p.tipo].toLowerCase()} de ${moeda(p.valor)}?`)) await excluir('pagamentos', p.id)
+                  if (await confirmar(`Excluir ${NOMES_TIPO[p.tipo].toLowerCase()} de ${moeda(p.valor)}?`)) await excluir('pagamentos', p.id)
                 })}>✕</button>
               </div>
             </div>
@@ -217,7 +223,7 @@ export default function PedidoDetalhe() {
               <div className="linha1">
                 <span>{dataBR(d.data)}{diffDias(pedido.data_prevista, d.data) > 0 ? ` · ${diffDias(pedido.data_prevista, d.data)} dia(s) de atraso` : ''}</span>
                 <button className="btn pequeno perigo" onClick={() => tentar(async () => {
-                  if (confirm('Excluir esta devolução? As peças voltam a contar como alugadas.')) await excluirDevolucao(d)
+                  if (await confirmar('Excluir esta devolução? As peças voltam a contar como alugadas.')) await excluirDevolucao(d)
                 })}>✕</button>
               </div>
               <div className="linha2" style={{ display: 'block' }}>

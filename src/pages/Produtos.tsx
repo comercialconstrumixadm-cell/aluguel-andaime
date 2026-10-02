@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { avisar, confirmar } from '../components/dialogos'
 import { CampoNumero, Cabecalho, Modal, mensagemErro } from '../components/ui'
 import { moeda } from '../lib/format'
 import { agoraISO, novoId, useStore } from '../lib/store'
@@ -102,10 +103,10 @@ function ProdutoForm({ produto, aoFechar }: { produto?: Produto; aoFechar: () =>
   const remover = async () => {
     if (!produto) return
     if (dados.pedidos.some((p) => p.itens.some((i) => i.produto_id === produto.id))) {
-      alert('Este produto já foi usado em pedidos. Em vez de excluir, desmarque "Ativo" para escondê-lo dos novos pedidos.')
+      await avisar('Este produto já foi usado em pedidos. Em vez de excluir, desmarque "Ativo" para escondê-lo dos novos pedidos.')
       return
     }
-    if (!confirm(`Excluir o produto ${produto.nome}?`)) return
+    if (!await confirmar(`Excluir o produto ${produto.nome}?`)) return
     try {
       await excluir('produtos', produto.id)
       aoFechar()

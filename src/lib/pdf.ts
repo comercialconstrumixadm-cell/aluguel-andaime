@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { salvarArquivo } from './arquivo'
 import type { ResumoPedido } from './calc'
 import { dataBR, hoje, moeda, porExtenso } from './format'
 import type { Cliente, Config, Pagamento, Pedido, Produto } from './types'
@@ -268,5 +269,5 @@ export async function entregarPdf(doc: jsPDF, prefixo: string, pedido: Pedido, c
       }
     }
   }
-  doc.save(nome)
+  await salvarArquivo(nome, doc.output('blob'))
 }

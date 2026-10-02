@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { avisar, confirmar } from '../components/dialogos'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ClienteForm from '../components/ClienteForm'
 import { Cabecalho, StatusTag, mensagemErro } from '../components/ui'
@@ -20,15 +21,15 @@ export default function ClienteDetalhe() {
 
   const remover = async () => {
     if (pedidos.length) {
-      alert('Este cliente tem pedidos no histórico e não pode ser excluído.')
+      await avisar('Este cliente tem pedidos no histórico e não pode ser excluído.')
       return
     }
-    if (!confirm(`Excluir o cliente ${cliente.nome}?`)) return
+    if (!await confirmar(`Excluir o cliente ${cliente.nome}?`)) return
     try {
       await excluir('clientes', cliente.id)
       navegar('/clientes')
     } catch (e) {
-      alert(mensagemErro(e))
+      await avisar(mensagemErro(e))
     }
   }
 

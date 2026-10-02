@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, MemoryRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from './lib/db'
+import { dentroDoClaude, supabase } from './lib/db'
+import { Dialogos } from './components/dialogos'
 import { StoreProvider, useStore } from './lib/store'
 import Painel from './pages/Painel'
 import Pedidos from './pages/Pedidos'
@@ -40,9 +41,16 @@ export default function App() {
 
   return (
     <StoreProvider>
-      <BrowserRouter>
-        <Estrutura />
-      </BrowserRouter>
+      {/* Dentro do claude.ai a página fica num quadro sem endereço próprio: a navegação fica em memória. */}
+      {dentroDoClaude ? (
+        <MemoryRouter>
+          <Estrutura />
+        </MemoryRouter>
+      ) : (
+        <BrowserRouter>
+          <Estrutura />
+        </BrowserRouter>
+      )}
     </StoreProvider>
   )
 }
@@ -62,7 +70,9 @@ function Estrutura() {
             </NavLink>
           ))}
         </nav>
-        <div className="rodape">{supabase ? <button onClick={sair}>Sair</button> : 'Modo demonstração'}</div>
+        <div className="rodape">
+          {supabase ? <button onClick={sair}>Sair</button> : modo === 'claude' ? 'Dados salvos na nuvem' : 'Modo demonstração'}
+        </div>
       </aside>
 
       <header className="topo-movel">
@@ -114,6 +124,7 @@ function Estrutura() {
           </NavLink>
         ))}
       </nav>
+      <Dialogos />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { gerarId } from './format'
 import type { Config, Produto } from './types'
 
 export const CLAUSULAS_PADRAO = `1. O LOCATÁRIO recebe os equipamentos descritos neste contrato em perfeito estado de conservação e funcionamento, comprometendo-se a devolvê-los nas mesmas condições.
@@ -31,14 +32,14 @@ export function produtosIniciais(): Produto[] {
   return [
     {
       ...base,
-      id: crypto.randomUUID(),
+      id: gerarId(),
       nome: 'Perna de andaime',
       faixas_dias: [
         { dias_min: 1, valor_dia: 2 },
         { dias_min: 16, valor_dia: 1.2 },
       ],
     },
-    { ...base, id: crypto.randomUUID(), nome: 'Roldana', faixas_dias: [] },
-    { ...base, id: crypto.randomUUID(), nome: 'Piso', faixas_dias: [] },
+    { ...base, id: gerarId(), nome: 'Roldana', faixas_dias: [] },
+    { ...base, id: gerarId(), nome: 'Piso', faixas_dias: [] },
   ]
 }

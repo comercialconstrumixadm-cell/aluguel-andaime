@@ -22,11 +22,15 @@ Sistema de gestão de aluguel de andaimes, para uso interno: clientes, pedidos, 
 - **Documentos em PDF**: contrato, recibo, romaneio de entrega/retirada e romaneio de devolução. No celular, o botão 📤 abre o compartilhamento direto pro WhatsApp.
 - **Cobrança no WhatsApp**: abre a conversa com o cliente e a mensagem pronta (o texto pode ser editado em Configurações).
 
-Sem o banco de dados configurado, o app roda em **modo demonstração**, com os dados salvos só no navegador.
+## Onde o app roda
+
+- **No claude.ai (jeito atual):** o app é publicado como um Artifact privado e os dados ficam guardados na nuvem do Claude. Basta abrir o link logado na sua conta do Claude, no computador ou no celular. Para publicar uma nova versão: `npm run build:claude` e publicar o arquivo `dist-claude/aluguel-andaime.html`.
+- **Supabase + Vercel (opcional, no futuro):** veja o passo a passo abaixo.
+- **Sem nenhum dos dois:** o app roda em **modo demonstração**, com os dados salvos só no navegador.
 
 ---
 
-## Como colocar no ar (uma vez só, uns 15 minutos)
+## Opcional: colocar no ar com Supabase + Vercel
 
 ### 1. Criar o banco de dados no Supabase
 

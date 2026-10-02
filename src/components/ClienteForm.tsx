@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { confirmar } from './dialogos'
 import { mascaraCpfCnpj, mascaraTelefone } from '../lib/format'
 import { agoraISO, novoId, useStore } from '../lib/store'
 import type { Cliente } from '../lib/types'
@@ -20,7 +21,7 @@ export default function ClienteForm({ cliente, aoFechar, aoSalvar }: {
   const salvar = async (e: FormEvent) => {
     e.preventDefault()
     const duplicado = form.cpf_cnpj && dados.clientes.find((c) => c.cpf_cnpj === form.cpf_cnpj && c.id !== form.id)
-    if (duplicado && !confirm(`Já existe um cliente com este CPF/CNPJ (${duplicado.nome}). Salvar mesmo assim?`)) return
+    if (duplicado && !await confirmar(`Já existe um cliente com este CPF/CNPJ (${duplicado.nome}). Salvar mesmo assim?`)) return
     setSalvando(true)
     try {
       const limpo = { ...form, nome: form.nome.trim() }

@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { confirmar } from '../components/dialogos'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ClienteForm from '../components/ClienteForm'
 import { CampoNumero, Cabecalho, mensagemErro } from '../components/ui'
@@ -101,7 +102,7 @@ export default function PedidoForm() {
     const faltando = validos.filter((i) => i.quantidade - devolvidasDe(i.produto_id) > (disponiveis.get(i.produto_id) ?? 0))
     if (faltando.length) {
       const nomes = faltando.map((i) => `${dados.produtos.find((p) => p.id === i.produto_id)?.nome} (disponível: ${disponiveis.get(i.produto_id) ?? 0})`).join(', ')
-      if (!confirm(`Estoque insuficiente: ${nomes}. Salvar mesmo assim?`)) return
+      if (!await confirmar(`Estoque insuficiente: ${nomes}. Salvar mesmo assim?`)) return
     }
 
     setSalvando(true)
