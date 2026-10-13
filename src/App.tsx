@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { BrowserRouter, MemoryRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { dentroDoClaude, supabase } from './lib/db'
+import { traduzirErro } from './lib/format'
 import { Dialogos } from './components/dialogos'
 import { StoreProvider, useStore } from './lib/store'
 import Painel from './pages/Painel'
@@ -139,8 +140,12 @@ function Login() {
     e.preventDefault()
     setEnviando(true)
     setErro('')
-    const { error } = await supabase!.auth.signInWithPassword({ email, password: senha })
-    if (error) setErro(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message)
+    try {
+      const { error } = await supabase!.auth.signInWithPassword({ email, password: senha })
+      if (error) setErro(traduzirErro(error.message))
+    } catch (err) {
+      setErro(traduzirErro(err instanceof Error ? err.message : String(err)))
+    }
     setEnviando(false)
   }
 

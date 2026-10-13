@@ -57,7 +57,13 @@ Sistema de gestão de aluguel de andaimes, para uso interno: clientes, pedidos, 
    - `VITE_SUPABASE_ANON_KEY` = a chave anon/publishable do passo 1.6
 4. Clique em **Deploy**. Quando terminar, a Vercel mostra o link do app (ex.: `aluguel-andaime.vercel.app`).
 
-### 3. Usar no celular
+### 3. Impedir que o Supabase pause
+
+O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso (os dados não se perdem; basta clicar em **Restore project** no painel). Para evitar isso, o repositório tem uma tarefa automática (`.github/workflows/manter-supabase-ativo.yml`) que consulta o banco a cada 3 dias. Para ela funcionar, cadastre em **GitHub → repositório → Settings → Secrets and variables → Actions → New repository secret**:
+- `SUPABASE_URL` = o Project URL do Supabase
+- `SUPABASE_ANON_KEY` = a chave anon/publishable do Supabase
+
+### 4. Usar no celular
 
 Abra o link no navegador do celular e entre com o e-mail e a senha do passo 1.4. Para virar um "aplicativo" na tela inicial:
 - **Android (Chrome)**: menu ⋮ → **Adicionar à tela inicial**

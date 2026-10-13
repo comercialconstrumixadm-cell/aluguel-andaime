@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { NOMES_STATUS, type ResumoPedido } from '../lib/calc'
+import { traduzirErro } from '../lib/format'
 
 export function Modal({ titulo, aoFechar, children, rodape }: {
   titulo: string
@@ -75,5 +76,5 @@ export function Cabecalho({ titulo, children }: { titulo: ReactNode; children?: 
 }
 
 export function mensagemErro(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
+  return traduzirErro(e instanceof Error ? e.message : String(e))
 }

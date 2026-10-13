@@ -143,3 +143,13 @@ export function gerarId(): string {
   const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
+
+export const ERRO_CONEXAO =
+  'Não foi possível conectar ao banco de dados. Confira se a internet está funcionando. Se estiver, o projeto no Supabase pode ter sido pausado por falta de uso: entre em supabase.com/dashboard, abra o projeto aluguel-andaime e clique em "Restore project". Depois de uns 2 minutos, tente de novo.'
+
+/** Traduz erros técnicos (ex.: "Load failed" do Safari, "Failed to fetch" do Chrome) para uma orientação clara. */
+export function traduzirErro(mensagem: string): string {
+  if (/load failed|failed to fetch|networkerror|network request failed|fetch failed/i.test(mensagem)) return ERRO_CONEXAO
+  if (mensagem === 'Invalid login credentials') return 'E-mail ou senha incorretos.'
+  return mensagem
+}

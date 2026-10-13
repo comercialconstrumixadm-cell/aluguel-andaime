@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { obterBackend, type Backend, type Dados, type Modo } from './db'
-import { gerarId } from './format'
+import { gerarId, traduzirErro } from './format'
 import { configPadrao, produtosIniciais } from './seed'
 import type { Config, Devolucao, NomeTabela, Tabelas } from './types'
 
@@ -47,7 +47,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       setDados(d)
     } catch (e) {
-      setErro(e instanceof Error ? e.message : String(e))
+      setErro(traduzirErro(e instanceof Error ? e.message : String(e)))
     } finally {
       setCarregando(false)
     }
