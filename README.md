@@ -59,7 +59,7 @@ Sistema de gestão de aluguel de andaimes, para uso interno: clientes, pedidos, 
 
 ### 3. Impedir que o Supabase pause
 
-O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso (os dados não se perdem; basta clicar em **Restore project** no painel). Para evitar isso, o repositório tem uma tarefa automática (`.github/workflows/manter-supabase-ativo.yml`) que consulta o banco a cada 3 dias. Para ela funcionar, cadastre em **GitHub → repositório → Settings → Secrets and variables → Actions → New repository secret**:
+O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso (os dados não se perdem; basta clicar em **Restore project** no painel). Para evitar isso, o repositório tem uma tarefa automática (`.github/workflows/manter-supabase-ativo.yml`) que consulta o banco todo dia. Para ela funcionar, cadastre em **GitHub → repositório → Settings → Secrets and variables → Actions → New repository secret**:
 - `SUPABASE_URL` = o Project URL do Supabase
 - `SUPABASE_ANON_KEY` = a chave anon/publishable do Supabase
 

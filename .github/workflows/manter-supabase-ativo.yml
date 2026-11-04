@@ -1,12 +1,12 @@
 # O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso.
-# Esta tarefa faz uma consulta leve a cada 3 dias para mantê-lo ativo.
+# Esta tarefa faz consultas leves todo dia para mantê-lo ativo.
 # Precisa dos segredos SUPABASE_URL e SUPABASE_ANON_KEY em
 # Settings > Secrets and variables > Actions do repositório.
 name: Manter Supabase ativo
 
 on:
   schedule:
-    - cron: '17 11 */3 * *'
+    - cron: '17 11 * * *'
   workflow_dispatch:
 
 jobs:
@@ -22,8 +22,14 @@ jobs:
             echo "::error::Cadastre os segredos SUPABASE_URL e SUPABASE_ANON_KEY no repositório."
             exit 1
           fi
-          status=$(curl -s -o /dev/null -w '%{http_code}' \
-            "$SUPABASE_URL/rest/v1/configuracoes?select=id&limit=1" \
-            -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY")
-          echo "Resposta do Supabase: $status"
-          [ "$status" = "200" ]
+          consultar() {
+            curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$1" \
+              -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" || echo "sem-resposta"
+          }
+          banco=$(consultar "$SUPABASE_URL/rest/v1/configuracoes?select=id&limit=1")
+          login=$(consultar "$SUPABASE_URL/auth/v1/health")
+          echo "Banco: $banco | Login: $login"
+          if [ "$banco" != "200" ]; then
+            echo "::error::O Supabase não respondeu. Provavelmente o projeto foi pausado: abra supabase.com/dashboard e clique em Resume project."
+            exit 1
+          fi
