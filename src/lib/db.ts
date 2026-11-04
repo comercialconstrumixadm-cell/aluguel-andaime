@@ -12,9 +12,11 @@ export interface Backend {
   inserir<K extends NomeTabela>(tabela: K, linha: Tabelas[K]): Promise<void>
   atualizar<K extends NomeTabela>(tabela: K, id: string, campos: Partial<Tabelas[K]>): Promise<void>
   excluir(tabela: NomeTabela, id: string): Promise<void>
+  /** Cria a linha ou substitui a que já existe com o mesmo id (usado ao restaurar uma cópia). */
+  gravar<K extends NomeTabela>(tabela: K, linha: Tabelas[K]): Promise<void>
 }
 
-const TABELAS: NomeTabela[] = ['produtos', 'clientes', 'pedidos', 'devolucoes', 'pagamentos', 'configuracoes']
+export const TABELAS: NomeTabela[] = ['produtos', 'clientes', 'pedidos', 'devolucoes', 'pagamentos', 'configuracoes']
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const chave = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
@@ -50,6 +52,10 @@ function supabaseBackend(sb: SupabaseClient): Backend {
     },
     async excluir(tabela, id) {
       const { error } = await sb.from(tabela).delete().eq('id', id)
+      verificar(error)
+    },
+    async gravar(tabela, linha) {
+      const { error } = await sb.from(tabela).upsert(linha as never)
       verificar(error)
     },
   }
@@ -110,6 +116,10 @@ function localBackend(): Backend {
       dados = { ...dados, [tabela]: lista(tabela).filter((l) => l.id !== id) }
       salvar()
     },
+    async gravar(tabela, linha) {
+      dados = { ...dados, [tabela]: [...lista(tabela).filter((l) => l.id !== linha.id), structuredClone(linha)] }
+      salvar()
+    },
   }
 }
 
@@ -155,6 +165,9 @@ function claudeBackend(db: ClaudeDb): Backend {
     },
     async excluir(tabela, id) {
       await ref(tabela, id).delete()
+    },
+    async gravar(tabela, linha) {
+      await ref(tabela, linha.id).set(structuredClone(linha) as unknown as Record<string, unknown>)
     },
   }
 }

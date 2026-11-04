@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { obterBackend, type Backend, type Dados, type Modo } from './db'
+import { TABELAS, obterBackend, type Backend, type Dados, type Modo } from './db'
 import { gerarId, traduzirErro } from './format'
 import { configPadrao, produtosIniciais } from './seed'
 import type { Config, Devolucao, NomeTabela, Tabelas } from './types'
@@ -16,6 +16,7 @@ interface Store {
   registrarDevolucao(dev: Devolucao): Promise<void>
   excluirDevolucao(dev: Devolucao): Promise<void>
   recarregar(): Promise<void>
+  restaurar(copia: Dados, aoAvancar?: (feitos: number, total: number) => void): Promise<void>
 }
 
 const Ctx = createContext<Store | null>(null)
@@ -107,6 +108,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [excluir, ajustarEstoque],
   )
 
+  /**
+   * Substitui todos os dados pelos de uma cópia de segurança.
+   * Apaga primeiro o que depende de outros registros (pagamentos → configurações) e grava na ordem inversa.
+   */
+  const restaurar = useCallback(
+    async (copia: Dados, aoAvancar?: (feitos: number, total: number) => void) => {
+      const backend = await obterBackend()
+      const atual = await backend.carregar()
+      const ordemExclusao = [...TABELAS].reverse()
+      const ids = (t: NomeTabela) => new Set((copia[t] as { id: string }[]).map((l) => l.id))
+      const apagar = ordemExclusao.flatMap((t) => (atual[t] as { id: string }[]).filter((l) => !ids(t).has(l.id)).map((l) => [t, l.id] as const))
+      const gravar = TABELAS.flatMap((t) => (copia[t] as Tabelas[typeof t][]).map((l) => [t, l] as const))
+      const total = apagar.length + gravar.length
+      let feitos = 0
+      for (const [t, id] of apagar) {
+        await backend.excluir(t, id)
+        aoAvancar?.(++feitos, total)
+      }
+      for (const [t, linha] of gravar) {
+        await backend.gravar(t, linha as never)
+        aoAvancar?.(++feitos, total)
+      }
+      // Atualiza a tela sem passar pelo "Carregando…", para a página continuar aberta e mostrar o resultado.
+      setDados(await backend.carregar())
+    },
+    [],
+  )
+
   const valor = useMemo<Store>(
     () => ({
       dados,
@@ -120,8 +149,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       registrarDevolucao,
       excluirDevolucao,
       recarregar,
+      restaurar,
     }),
-    [dados, carregando, erro, backend, inserir, atualizar, excluir, registrarDevolucao, excluirDevolucao, recarregar],
+    [dados, carregando, erro, backend, inserir, atualizar, excluir, registrarDevolucao, excluirDevolucao, recarregar, restaurar],
   )
 
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>

@@ -24,7 +24,7 @@ Sistema de gestão de aluguel de andaimes, para uso interno: clientes, pedidos, 
 
 ## Onde o app roda
 
-- **No claude.ai (jeito atual):** o app é publicado como um Artifact privado e os dados ficam guardados na nuvem do Claude. Basta abrir o link logado na sua conta do Claude, no computador ou no celular. Para publicar uma nova versão: `npm run build:claude` e publicar o arquivo `dist-claude/aluguel-andaime.html`.
+- **No claude.ai (jeito atual):** https://claude.ai/artifact/3kcUoRE3ZzeebbjuDEPZXU — o app é publicado como um Artifact privado e os dados ficam guardados na nuvem do Claude. Basta abrir o link logado na sua conta do Claude, no computador ou no celular. Para publicar uma nova versão: `npm run build:claude` e publicar o arquivo `dist-claude/aluguel-andaime.html`.
 - **Supabase + Vercel (opcional, no futuro):** veja o passo a passo abaixo.
 - **Sem nenhum dos dois:** o app roda em **modo demonstração**, com os dados salvos só no navegador.
 
@@ -59,7 +59,7 @@ Sistema de gestão de aluguel de andaimes, para uso interno: clientes, pedidos, 
 
 ### 3. Impedir que o Supabase pause
 
-O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso (os dados não se perdem; basta clicar em **Restore project** no painel). Para evitar isso, o repositório tem uma tarefa automática (`.github/workflows/manter-supabase-ativo.yml`) que consulta o banco todo dia. Para ela funcionar, cadastre em **GitHub → repositório → Settings → Secrets and variables → Actions → New repository secret**:
+O plano gratuito do Supabase pausa o projeto depois de 7 dias sem uso (os dados não se perdem; basta clicar em **Restore project** no painel). Para evitar isso, o repositório tem uma tarefa automática (`.github/workflows/manter-supabase-ativo.yml`) que consulta o banco todo dia. Ela está desligada desde que o app voltou para o claude.ai; para religar, recoloque o agendamento no arquivo. Para ela funcionar, cadastre em **GitHub → repositório → Settings → Secrets and variables → Actions → New repository secret**:
 - `SUPABASE_URL` = o Project URL do Supabase
 - `SUPABASE_ANON_KEY` = a chave anon/publishable do Supabase
 

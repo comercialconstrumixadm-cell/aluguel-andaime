@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
+import { confirmar } from '../components/dialogos'
 import { Cabecalho, mensagemErro } from '../components/ui'
 import { mascaraCpfCnpj, mascaraTelefone } from '../lib/format'
 import { CLAUSULAS_PADRAO, MENSAGEM_COBRANCA_PADRAO } from '../lib/seed'
 import { salvarArquivo } from '../lib/arquivo'
+import { TABELAS, type Dados } from '../lib/db'
 import { useStore } from '../lib/store'
 import type { Config } from '../lib/types'
 
 export default function Configuracoes({ aoSair }: { aoSair?: () => void }) {
-  const { config, dados, atualizar, inserir, modo } = useStore()
+  const { config, dados, atualizar, inserir, modo, restaurar } = useStore()
+  const [progresso, setProgresso] = useState<string | null>(null)
   const [form, setForm] = useState<Config>(config)
   const [msg, setMsg] = useState<{ tipo: 'info' | 'erro'; texto: string } | null>(null)
   const set = (c: Partial<Config>) => setForm((f) => ({ ...f, ...c }))
@@ -28,6 +31,35 @@ export default function Configuracoes({ aoSair }: { aoSair?: () => void }) {
       await salvarArquivo(`backup-aluguel-andaime-${new Date().toISOString().slice(0, 10)}.json`, blob)
     } catch (e) {
       setMsg({ tipo: 'erro', texto: mensagemErro(e) })
+    }
+  }
+
+  const importar = async (e: ChangeEvent<HTMLInputElement>) => {
+    const arquivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!arquivo) return
+    let copia: Dados
+    try {
+      const lido = JSON.parse(await arquivo.text()) as Partial<Dados>
+      if (!TABELAS.every((t) => Array.isArray(lido[t]))) throw new Error()
+      copia = lido as Dados
+    } catch {
+      setMsg({ tipo: 'erro', texto: 'Este arquivo não é uma cópia de segurança do Aluguel Andaime. Escolha o arquivo "backup-aluguel-andaime-....json".' })
+      return
+    }
+    const resumo = `${copia.clientes.length} cliente(s), ${copia.pedidos.length} pedido(s) e ${copia.produtos.length} produto(s)`
+    const ok = await confirmar(
+      `A cópia tem ${resumo}. Restaurar vai SUBSTITUIR todos os dados que estão no app agora pelos da cópia. Continuar?`,
+    )
+    if (!ok) return
+    setMsg(null)
+    try {
+      await restaurar(copia, (feitos, total) => setProgresso(`Restaurando… ${feitos} de ${total}`))
+      setMsg({ tipo: 'info', texto: `Cópia restaurada: ${resumo}.` })
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: `A restauração parou no meio: ${mensagemErro(err)} Tente de novo com o mesmo arquivo.` })
+    } finally {
+      setProgresso(null)
     }
   }
 
@@ -77,8 +109,16 @@ export default function Configuracoes({ aoSair }: { aoSair?: () => void }) {
         </p>
         <div className="botoes">
           <button className="btn" onClick={() => void exportar()}>Baixar cópia de segurança</button>
+          <label className="btn" htmlFor="restaurar-copia">
+            Restaurar cópia de segurança
+            <input id="restaurar-copia" type="file" accept=".json,application/json" hidden onChange={(e) => void importar(e)} disabled={!!progresso} />
+          </label>
           {aoSair && <button className="btn perigo" onClick={aoSair}>Sair da conta</button>}
         </div>
+        {progresso && <p className="suave" style={{ marginBottom: 0 }}>{progresso}</p>}
+        <p className="ajuda" style={{ marginBottom: 0 }}>
+          Restaurar substitui tudo o que está no app pelos dados do arquivo. Use para trazer os dados de outro aparelho ou de outra versão do app.
+        </p>
       </div>
     </>
   )

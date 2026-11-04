@@ -4,9 +4,9 @@
 # Settings > Secrets and variables > Actions do repositório.
 name: Manter Supabase ativo
 
+# Desligada (o app passou a rodar no claude.ai). Para voltar a usar o Supabase,
+# recoloque o bloco "schedule" com: - cron: '17 11 * * *'
 on:
-  schedule:
-    - cron: '17 11 * * *'
   workflow_dispatch:
 
 jobs:
