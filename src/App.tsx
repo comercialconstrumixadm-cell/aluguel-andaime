@@ -153,6 +153,11 @@ function Login() {
     <div className="login">
       <form className="card" onSubmit={entrar}>
         <h1 style={{ marginBottom: '1rem' }}>🏗️ Aluguel Andaime</h1>
+        <div className="aviso info">
+          <strong>O app mudou de endereço.</strong> Agora ele fica no Claude:{' '}
+          <a href="https://claude.ai/artifact/3kcUoRE3ZzeebbjuDEPZXU">abrir o Aluguel Andaime no Claude</a>. Use esta
+          versão só para baixar uma cópia de segurança dos dados antigos.
+        </div>
         {erro && <div className="aviso erro">{erro}</div>}
         <div className="linha-form">
           <label className="campo">
